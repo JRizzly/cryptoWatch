@@ -19,17 +19,23 @@ import pymongo
 
 
 client = pymongo.MongoClient("192.168.169.52", 27017)
-db = client.cryptowatch
+db = client.MarketWatchHighRes
 f = open('OfficialRates2.csv', 'a', 0)
 
 global firstTime
 firstTime = 0
 
+def pushToDB(r):
+    q = r.json()["result"]
+    post = {"date":time.time()}
+    for i in q:
+        post[i] = r.json()["result"][i]
+    db['cryptowatchdata'].insert(post)
 
 def pricesToCSV():
     global firstTime
 
-    r = requests.get("https://api.cryptowat.ch/markets/prices")
+
     #print r.text
     txtBody = str(r.text)
     #print txtBody
@@ -82,15 +88,14 @@ def pricesToCSV():
 
 
 def main():
-    try:
-        while 1:
-            pricesToCSV()
+    while 1:
+        try:
+            pushToDB(requests.get("https://api.cryptowat.ch/markets/prices"))
             time.sleep(10)
-    except KeyboardInterrupt:
-        io_loop.stop()
-        f.close()
-        sys.exit()
-    
+            print "data pushed"
+        except:
+            print "error pushing db/pulling api"
+            pass
         
 if __name__ == '__main__':
   main()    
